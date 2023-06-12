@@ -1,49 +1,29 @@
 
-const socket = io.connect('http://localhost:3000')
+const socket = io.connect('http://localhost:3000');
 
-/* const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-const source = audioCtx.createBufferSource();
-
-// Conectando a fonte de áudio à saída do áudio
-source.connect(audioCtx.destination);
-
-// Enviando o sinal para o servidor
-const playButton = document.getElementById('play');
-const stopButton = document.getElementById('stop');
-
-playButton.addEventListener('click', () => {
-  socket.emit('play', { action: 'start' });
-});
-
-stopButton.addEventListener('click', () => {
-  socket.emit('play', { action: 'stop' });
-});
-
-socket.on('play', (data) => {
-  if (data.action === 'start') {
-    // Iniciando a reprodução do áudio
-    source.start(0);
-  } else if (data.action === 'stop') {
-    // Parando a reprodução do áudio
-    source.stop();
-  }
-}); */
-
-const listButton = document.getElementById('list');
-
-listButton.addEventListener('click', () => {
-  socket.emit('list items');
-});
-
+const audio = document.getElementById("audioPlayer");
+audio.crossOrigin = "anonymous";
 
 let availableMusics = []
 let currentMusic = undefined
+
+let sourceBuffer = null;
+let mediaSource = null;
+let loadingBuffer = false;
+const partSize = 30;
+
+socket.emit('list items');
 
 function initMusic(musicId) {
   currentMusic = availableMusics.find( m => m.id === musicId)
   const container = document.getElementById("music-container")
   container.textContent = currentMusic.name
-  socket.emit('get track', { music: musicId, track: 0 });
+
+  sourceBuffer = null;
+  mediaSource = null;
+  loadingBuffer = false;
+
+  socket.emit('getTrack', { music: musicId, track: 0 });
 }
 
 function listMusics() {
@@ -58,58 +38,64 @@ function listMusics() {
   container.append(...newNodes)
 }
 
-const audio = document.getElementById("audioPlayer");
-audio.crossOrigin = "anonymous";
-
-async function decodeAudio(data) {
-  //const audioContext = new (window.AudioContext || window.webkitAudioContext)()
-
-  const AudioContext = window.AudioContext || window.webkitAudioContext;
-  const audioContext = new AudioContext();
-  
-  // Criar um buffer de áudio
-  const audioData = data;
-  
-  // Decodificar o buffer de áudio
-  audioContext.decodeAudioData(audioData, function(buffer) {
-    const source = audioContext.createBufferSource();
-    source.buffer = buffer;
-    
-    //audio.currentTime = partIndex * partSize;
-    source.connect(audioContext.destination);
-    
-    source.start();
-  });
-  
-  /* let context = new AudioContext()
-  const audioToPlay = await context.decodeAudioData(data)
-  console.log(audioToPlay)
-  const audioBuffer = context.createBuffer(1, audioToPlay.length, 4 * 1000);
-  audioBuffer.getChannelData(0).set(audioToPlay);
-
-  const blob = new Blob([audioBuffer], { type: "audio/mp3" });
-  const url = window.URL.createObjectURL(blob);
-  const audioElement = document.querySelector("audio")
-  audioElement.src = url;
-
-  const source = context.createBufferSource();
-  source.buffer = audioBuffer;
-  source.connect(context.destination);
-  source.start(0);
-
-  window.URL.revokeObjectURL(url); */
-  
-}
-
 socket.on('items', (data) => {
   availableMusics = data
-  console.log(data)
   listMusics()
 })
 
-socket.on('track', (data) => {
+socket.on('audioPart', (data) => {
   console.log(data)
-  decodeAudio(data)
+  const audioData = new Uint8Array(data.audioData);
+
+  if (!mediaSource) {
+    mediaSource = new MediaSource();
+    audio.src = URL.createObjectURL(mediaSource);
+
+    mediaSource.addEventListener('sourceopen', () => {
+      sourceBuffer = mediaSource.addSourceBuffer('audio/mpeg');
+      sourceBuffer.addEventListener('updateend', () => {
+        if (!sourceBuffer.updating && mediaSource.readyState === 'open') {
+          mediaSource.endOfStream();
+          //mediaSource.duration = currentMusic.duration;
+          loadingBuffer = false
+        }
+      });
+      sourceBuffer.appendBuffer(audioData);
+    });
+  } else {
+    if (!sourceBuffer.updating) {
+      sourceBuffer.appendBuffer(audioData);
+      loadingBuffer = false
+    } else {
+      sourceBuffer.addEventListener('updateend', () => {
+        if (!sourceBuffer.updating && mediaSource.readyState === 'open') {
+          mediaSource.endOfStream();
+          //mediaSource.duration = currentMusic.duration;
+          loadingBuffer = false
+        }
+      });
+      sourceBuffer.appendBuffer(audioData);
+    }
+  }
+  
+  currentMusic.part = data.part
 })
 
-socket.emit('list items');
+function requestAudioPart() {
+  if(!loadingBuffer) {
+    loadingBuffer = true
+    console.log("requestAudioPart")
+    socket.emit('getTrack', {music: currentMusic.id, track: Math.floor(currentMusic.part+1)});
+  } else {
+    console.log("loadingBuffer")
+  }
+}
+
+audio.addEventListener('timeupdate', (ev) => {
+  //console.log(ev)
+  if(ev.target.duration - ev.target.currentTime < 15) {
+    if(currentMusic.duration - ev.target.duration > 1) {
+      requestAudioPart()
+    }
+  }
+})
