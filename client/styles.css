@@ -182,6 +182,19 @@ small {
   z-index: 2;
 }
 
+#clients-container li::before{
+  content: '';
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  -moz-border-radius: 7.5px;
+  -webkit-border-radius: 7.5px;
+  border-radius: 7.5px;
+  background-color: #33ce48;
+  margin-right: 10px;
+  text-decoration: none;
+}
+
 /* Button Animation */
 
 .button {
