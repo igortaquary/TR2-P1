@@ -1,8 +1,11 @@
-
-const socket = io.connect('http://localhost:3000');
+const host = new URLSearchParams(window.location.search).get("server") || "http://localhost"
+const port = "3000"
+const socket = io.connect(host + ":" + port);
 
 const audio = document.getElementById("audioPlayer");
 audio.crossOrigin = "anonymous";
+
+let clientId;
 
 let availableMusics = []
 let currentMusic = undefined
@@ -34,26 +37,32 @@ function listMusics() {
   const newNodes = []
   availableMusics.forEach((msc) => {
     const li = document.createElement("li")
-    li.textContent = msc.name + " " + Math.floor(msc.duration/60) + ":" + (msc.duration%60) 
+    li.textContent = msc.id + " - " + msc.name + ". " + durationToText(msc.duration) 
     li.onclick = () => initMusic(msc.id)
     newNodes.push(li)
   })
   container.replaceChildren(...newNodes)
 }
 
-function listClients(myId, ids=[]) {
+function listClients(ids=[]) {
   const container = document.getElementById("clients-container")
   const newNodes = []
-  const myli = document.createElement("li")
-  myli.textContent = myId;
-  ids.filter( id => id !== myId ).forEach((id) => {
+
+  ids.filter( id => id !== clientId ).forEach((id) => {
     const li = document.createElement("li")
     li.textContent = id;
-    //li.onclick = () => initMusic(msc.id)
+    li.onclick = () => selectRemote(id)
     newNodes.push(li)
   })
-  container.replaceChildren(myli, ...newNodes)
+  container.replaceChildren(...newNodes)
 }
+
+socket.on('clientId', (id) => {
+  console.log(id)
+  clientId = id
+  const userNode = document.getElementById("user")
+  userNode.textContent = id;
+})
 
 socket.on('items', (data) => {
   availableMusics = data
@@ -62,7 +71,12 @@ socket.on('items', (data) => {
 
 socket.on('clients', (data) => {
   console.log(data)
-  listClients(data.you, data.others)
+  listClients(data)
+})
+
+socket.on('play', (musicId) => {
+  console.log("play " + musicId)
+  initMusic(Number(musicId))
 })
 
 socket.on('audioPart', (data) => {
@@ -113,6 +127,16 @@ function requestAudioPart() {
   }
 }
 
+function selectRemote(id) {
+  const mscId = Number(window.prompt("Digite o ID da música a ser tocada no cliente remoto " + id))
+  console.log(mscId)
+  if(availableMusics.findIndex(m => m.id === mscId) === -1) {
+    window.alert("Número da música inválido")
+  } else if(mscId) {
+    socket.emit('playRemote', {music: mscId, client: id})
+  }
+}
+
 audio.addEventListener('timeupdate', (ev) => {
   //console.log(ev)
   if(ev.target.duration - ev.target.currentTime < 15) {
@@ -121,3 +145,10 @@ audio.addEventListener('timeupdate', (ev) => {
     }
   }
 })
+
+function durationToText(duration) {
+  const minutes = Math.floor(duration/60)
+  const seconds = (duration%60)
+
+  return (minutes < 10 ? "0" : "") + minutes + ":" + (seconds < 10 ? "0" : "") + seconds
+}

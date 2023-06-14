@@ -10,13 +10,14 @@ io.on('connection', (socket) => {
 
   socket.on("listMusics", async () => {
     console.log("on list items")
-    socket.emit("items", musics )
+    socket.emit("items", musics)
+    socket.emit("clientId", socket.id)
   });
 
   socket.on("listClients", async () => {
     console.log("on list clients")
     const ids = (await io.fetchSockets()).map( sock => sock.id )
-    io.emit("clients", { you: socket.id, others: ids })
+    io.emit("clients", ids)
   })
 
   socket.on('getTrack', async (data) => {
@@ -53,6 +54,19 @@ io.on('connection', (socket) => {
         socket.emit('audioPart', { audioData, part });
       });
     })
+  })
+
+  socket.on('disconnect', async () => {
+    console.log('disconnected');
+    const ids = (await io.fetchSockets()).map( sock => sock.id )
+    io.emit("clients", ids)
+  });
+
+  socket.on('playRemote', ({music, client}) => {
+    console.log("playRemote => " + {music, client})
+    io.sockets.sockets.get(client)
+    .emit("play", music)
+    //io.sockets.socket(client)
   })
 });
 
