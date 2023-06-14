@@ -41,7 +41,7 @@ io.on('connection', (socket) => {
         return socket.emit('error', 'Parte não encontrada.');
       }
 
-      const stream = fs.createReadStream(music.path, { start: blockSize * part, end: (blockSize-1) * (part+1) });
+      const stream = fs.createReadStream(music.path, { start: blockSize * part, end: (blockSize) * (part+1) });
 
       const chunks = [];
       stream.on('data', (chunk) => {
