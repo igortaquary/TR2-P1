@@ -12,7 +12,10 @@ let mediaSource = null;
 let loadingBuffer = false;
 const partSize = 30;
 
-socket.emit('list items');
+socket.on('connect', () => {
+  socket.emit('listMusics');
+  socket.emit('listClients');
+});
 
 function initMusic(musicId) {
   currentMusic = availableMusics.find( m => m.id === musicId)
@@ -31,16 +34,35 @@ function listMusics() {
   const newNodes = []
   availableMusics.forEach((msc) => {
     const li = document.createElement("li")
-    li.textContent = msc.name
+    li.textContent = msc.name + " " + Math.floor(msc.duration/60) + ":" + (msc.duration%60) 
     li.onclick = () => initMusic(msc.id)
     newNodes.push(li)
   })
-  container.append(...newNodes)
+  container.replaceChildren(...newNodes)
+}
+
+function listClients(myId, ids=[]) {
+  const container = document.getElementById("clients-container")
+  const newNodes = []
+  const myli = document.createElement("li")
+  myli.textContent = myId;
+  ids.filter( id => id !== myId ).forEach((id) => {
+    const li = document.createElement("li")
+    li.textContent = id;
+    //li.onclick = () => initMusic(msc.id)
+    newNodes.push(li)
+  })
+  container.replaceChildren(myli, ...newNodes)
 }
 
 socket.on('items', (data) => {
   availableMusics = data
   listMusics()
+})
+
+socket.on('clients', (data) => {
+  console.log(data)
+  listClients(data.you, data.others)
 })
 
 socket.on('audioPart', (data) => {

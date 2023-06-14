@@ -1,8 +1,51 @@
 body {
   font-family: sans-serif;
+  margin: 0;
+  padding: 0;
+  color: #ddd;
+  background-color: #2b2828;
+}
+
+.container {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+#list-container {
+  list-style-type: none;
+  list-style-position: outside;
+  padding: 0;
 }
 
 #list-container li {
   cursor: pointer;
-  text-decoration: underline;
+  text-decoration: none;
+  margin-bottom: 10px;
+  font-weight: 400;
+}
+
+#list-container li:hover {
+  color: #fff;;
+}
+
+#list-container li::before{
+  content: "\25B6";
+  margin-right: 10px;
+  text-decoration: none;
+}
+
+#music-container {
+  text-align: center;
+}
+
+#audio-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+}
+
+.top-grid {
+  display: flex;
+  justify-content: space-evenly;
 }

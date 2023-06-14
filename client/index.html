@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,21 +8,29 @@
   <script src="https://cdn.socket.io/4.6.0/socket.io.min.js" integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+" crossorigin="anonymous"></script>
 </head>
 <body>
-  <h2>Client</h2>
-  <div>
-    <ul id="list-container">
+  <div class="container">
+    <h2 id="music-container">
+      -
+    </h2>
+    <div id="audio-container">
+      <audio id="audioPlayer" controls autoplay></audio>
+    </div>
 
-    </ul>
+    <div class="top-grid">
+      <div>
+        <h2>Músicas</h2>
+        <ul id="list-container">
+          
+        </ul>
+      </div>
+      <div>
+        <h2>Amigos</h2>
+        <ul id="clients-container">
+
+        </ul>
+      </div>
+    </div>  
   </div>
-  
-  <h2 id="music-container">
-    
-  </h2>
-  <div id="audio-container">
-    <audio id="audioPlayer" controls autoplay></audio>
-  </div>
-  <button id="play">Play</button>
-  <button id="stop">Stop</button>
 
   <script src="./script.js" ></script>
 </body>
